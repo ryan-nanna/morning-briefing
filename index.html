@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Good Morning, Ryan</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap');
+  :root {
+    --ink: #1a1a2e; --soft: #4a4a6a; --muted: #8888aa; --line: #e8e8f0;
+    --bg: #f7f6f2; --card: #ffffff; --gold: #c9a84c; --gold-light: #f5edd8;
+    --green: #2d6a4f; --green-light: #d8f3dc; --blue: #1d3557; --blue-light: #e8f0f8;
+    --rose: #8b3a52; --rose-light: #fde8ee; --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+  .header { background: var(--ink); padding: 28px 20px 22px; position: relative; overflow: hidden; }
+  .header::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--gold), transparent); }
+  .header-date { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); font-weight: 500; margin-bottom: 6px; }
+  .header-greeting { font-family: 'Playfair Display', serif; font-size: 28px; color: #f7f6f2; font-weight: 400; line-height: 1.2; }
+  .header-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .generate-wrap { padding: 20px 16px 8px; }
+  .generate-btn { width: 100%; padding: 16px; background: var(--ink); color: #f7f6f2; border: none; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .loading-strip { display: none; padding: 12px 16px; text-align: center; font-size: 12px; color: var(--muted); letter-spacing: 0.06em; }
+  .loading-strip.active { display: block; }
+  .content { padding: 8px 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .module { background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); opacity: 0; transform: translateY(12px); transition: opacity 0.4s ease, transform 0.4s ease; }
+  .module.visible { opacity: 1; transform: translateY(0); }
+  .module-header { padding: 12px 16px 10px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); }
+  .module-icon { font-size: 16px; }
+  .module-title { font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .module-body { padding: 14px 16px; font-size: 14px; line-height: 1.65; color: var(--ink); }
+  .module.weather .module-header { background: var(--blue-light); }
+  .weather-row { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+  .weather-temp { font-family: 'Playfair Display', serif; font-size: 42px; color: var(--blue); line-height: 1; }
+  .weather-desc { font-size: 15px; color: var(--ink); font-weight: 500; }
+  .weather-detail { font-size: 12px; color: var(--soft); margin-top: 2px; }
+  .weather-summary { font-size: 13px; color: var(--soft); border-top: 1px solid var(--line); padding-top: 10px; margin-top: 4px; line-height: 1.6; }
+  .module.news .module-header { background: var(--gold-light); }
+  .news-section { margin-bottom: 14px; }
+  .news-section:last-child { margin-bottom: 0; }
+  .news-category { font-size: 9px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+  .news-item { font-size: 13px; color: var(--ink); line-height: 1.5; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .news-item:last-child { border-bottom: none; }
+  .news-item-headline { font-weight: 500; }
+  .news-item-summary { color: var(--soft); font-size: 12px; margin-top: 2px; }
+  .module.feelgood .module-header { background: var(--green-light); }
+  .feelgood-source { font-size: 11px; color: var(--muted); margin-top: 8px; font-style: italic; }
+  .module.jokes .module-header { background: var(--rose-light); }
+  .joke { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .joke:last-child { border-bottom: none; }
+  .joke-q { font-weight: 500; font-size: 14px; color: var(--ink); }
+  .joke-a { font-size: 13px; color: var(--rose); margin-top: 4px; font-style: italic; }
+  .placeholder { padding: 32px 16px; text-align: center; color: var(--muted); }
+  .placeholder-icon { font-size: 36px; margin-bottom: 12px; }
+  .placeholder-text { font-size: 14px; line-height: 1.6; }
+  .footer { text-align: center; padding: 8px 16px 24px; font-size: 11px; color: var(--muted); }
+  .module.coming-soon { background: transparent; border: 1.5px dashed var(--line); box-shadow: none; opacity: 1; transform: none; }
+  .module.coming-soon .module-header { background: transparent; border-bottom: none; }
+  .module.coming-soon .module-title { color: var(--line); }
+  .module.coming-soon .module-icon { opacity: 0.3; }
+  .coming-soon-label { font-size: 10px; color: var(--line); text-align: center; padding: 0 16px 14px; letter-spacing: 0.08em; }
+  .debug-panel { display: none; margin: 0 16px 12px; padding: 14px; background: #1a1a1a; border-radius: 10px; border: 1px solid #ff4444; }
+  .debug-panel.active { display: block; }
+  .debug-title { font-size: 11px; color: #ff4444; font-family: monospace; font-weight: bold; margin-bottom: 8px; }
+  .debug-body { font-size: 11px; color: #aaffaa; font-family: monospace; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto; line-height: 1.5; }
+  .debug-copy { margin-top: 10px; padding: 8px 12px; background: #333; color: #aaffaa; border: 1px solid #555; border-radius: 6px; font-size: 11px; font-family: monospace; cursor: pointer; width: 100%; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-date" id="headerDate"></div>
+  <div class="header-greeting">Good morning, Ryan.</div>
+  <div class="header-sub">Delafield, WI &middot; Your daily briefing</div>
+</div>
+
+<div class="generate-wrap">
+  <button class="generate-btn" id="generateBtn" onclick="generateBriefing()">
+    <span>&#9728;&#65039;</span> Generate My Morning Briefing
+  </button>
+</div>
+
+<div class="loading-strip" id="loadingStrip">Pulling your briefing together...</div>
+
+<div class="debug-panel" id="debugPanel">
+  <div class="debug-title">DEBUG — copy and paste to Claude</div>
+  <div class="debug-body" id="debugBody"></div>
+  <button class="debug-copy" onclick="copyDebug()">Copy to Clipboard</button>
+</div>
+
+<div class="content" id="content">
+  <div class="placeholder" id="placeholder">
+    <div class="placeholder-icon">&#127749;</div>
+    <div class="placeholder-text">Tap the button above to generate your personalized morning briefing.</div>
+  </div>
+</div>
+
+<div class="footer" id="footer" style="display:none">
+  Generated at <span id="genTime"></span> &middot; ~10 min read
+</div>
+
+<div class="content" style="padding-top:0">
+  <div class="module coming-soon">
+    <div class="module-header">
+      <span class="module-icon">&#128197;</span>
+      <span class="module-title">Today's Calendar</span>
+    </div>
+    <div class="coming-soon-label">Coming soon</div>
+  </div>
+  <div class="module coming-soon">
+    <div class="module-header">
+      <span class="module-icon">&#9889;</span>
+      <span class="module-title">Energy Check-In</span>
+    </div>
+    <div class="coming-soon-label">Coming soon</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var now = new Date();
+  var dateStr = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  document.getElementById("headerDate").textContent = dateStr;
+
+  function log(label, val) {
+    var body = document.getElementById("debugBody");
+    document.getElementById("debugPanel").classList.add("active");
+    body.textContent += label + ": " + (typeof val === "object" ? JSON.stringify(val) : val) + "\n\n";
+  }
+
+  window.copyDebug = function() {
+    var text = document.getElementById("debugBody").textContent;
+    var btn = document.querySelector(".debug-copy");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        btn.textContent = "Copied!";
+        setTimeout(function() { btn.textContent = "Copy to Clipboard"; }, 2000);
+      });
+    } else {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      btn.textContent = "Copied!";
+      setTimeout(function() { btn.textContent = "Copy to Clipboard"; }, 2000);
+    }
+  };
+
+  function showModule(html, delay) {
+    return new Promise(function(resolve) {
+      setTimeout(function() {
+        var content = document.getElementById("content");
+        var div = document.createElement("div");
+        div.innerHTML = html;
+        var mod = div.firstElementChild;
+        content.appendChild(mod);
+        setTimeout(function() { mod.classList.add("visible"); }, 50);
+        resolve();
+      }, delay);
+    });
+  }
+
+  window.generateBriefing = function() {
+    var btn = document.getElementById("generateBtn");
+    var loading = document.getElementById("loadingStrip");
+    var content = document.getElementById("content");
+
+    btn.disabled = true;
+    btn.innerHTML = "<span>&#8987;</span> Generating...";
+    loading.classList.add("active");
+
+    document.getElementById("debugPanel").classList.remove("active");
+    document.getElementById("debugBody").textContent = "";
+    document.getElementById("placeholder").style.display = "none";
+    document.getElementById("footer").style.display = "none";
+
+    var oldModules = content.querySelectorAll(".module");
+    oldModules.forEach(function(m) { m.remove(); });
+
+    var today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+
+    var prompt = "You are generating a personalized morning briefing for Ryan in Delafield/Oconomowoc Wisconsin. Today is " + today + ". He has 10 minutes to read this. Search the web for current news and weather. Respond ONLY with a valid JSON object, no markdown fences, no explanation, just the JSON.\n\nRequired structure:\n{\"weather\":{\"temp\":\"58 degrees\",\"condition\":\"Partly Cloudy\",\"detail\":\"Wind 10mph NW\",\"summary\":\"Two sentence practical summary including lawn mowing advice for today.\"},\"news\":[{\"category\":\"AI and Technology\",\"items\":[{\"headline\":\"headline\",\"summary\":\"one sentence\"},{\"headline\":\"headline\",\"summary\":\"one sentence\"}]},{\"category\":\"Financial Services\",\"items\":[{\"headline\":\"headline\",\"summary\":\"one sentence\"},{\"headline\":\"headline\",\"summary\":\"one sentence\"}]},{\"category\":\"Business\",\"items\":[{\"headline\":\"headline\",\"summary\":\"one sentence\"}]},{\"category\":\"Wisconsin\",\"items\":[{\"headline\":\"headline\",\"summary\":\"one sentence\"}]}],\"feelgood\":{\"story\":\"Two to three sentence uplifting story.\",\"source\":\"Source name\"},\"jokes\":[{\"q\":\"setup\",\"a\":\"punchline\"},{\"q\":\"setup\",\"a\":\"punchline\"},{\"q\":\"setup\",\"a\":\"punchline\"}]}";
+
+    var messages = [{ role: "user", content: prompt }];
+
+    function callAPI(turn) {
+      if (turn > 6) {
+        showError("Too many turns without a final response");
+        return;
+      }
+      fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 2500,
+          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          messages: messages
+        })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        log("Turn " + turn + " stop_reason", data.stop_reason || "unknown");
+        if (data.error) {
+          log("API error", JSON.stringify(data.error));
+          showError("API error: " + data.error.message);
+          return;
+        }
+        messages.push({ role: "assistant", content: data.content });
+        if (data.stop_reason === "tool_use") {
+          var toolResults = data.content
+            .filter(function(b) { return b.type === "tool_use"; })
+            .map(function(b) {
+              return { type: "tool_result", tool_use_id: b.id, content: "Search complete. Use current knowledge to fill the briefing." };
+            });
+          messages.push({ role: "user", content: toolResults });
+          callAPI(turn + 1);
+          return;
+        }
+        var raw = "";
+        data.content.forEach(function(block) {
+          if (block.type === "text") raw += block.text;
+        });
+        log("Raw response length", raw.length);
+        log("Raw preview (first 300)", raw.substring(0, 300));
+        if (!raw) {
+          showError("Empty response from API");
+          return;
+        }
+        var clean = raw.replace(/```json/g, "").replace(/```/g, "").trim();
+        var start = clean.indexOf("{");
+        var end = clean.lastIndexOf("}");
+        if (start === -1 || end === -1) {
+          log("Full raw response", raw);
+          showError("No JSON object found in response");
+          return;
+        }
+        var jsonStr = clean.slice(start, end + 1);
+        var briefing;
+        try {
+          briefing = JSON.parse(jsonStr);
+        } catch(e) {
+          log("Parse error", e.message);
+          log("JSON start", jsonStr.substring(0, 400));
+          log("JSON end", jsonStr.substring(jsonStr.length - 400));
+          showError("JSON parse failed: " + e.message);
+          return;
+        }
+        renderBriefing(briefing);
+      })
+      .catch(function(err) {
+        log("Fetch error", err.message);
+        showError("Network error: " + err.message);
+      });
+    }
+
+    function showError(msg) {
+      loading.classList.remove("active");
+      btn.disabled = false;
+      btn.innerHTML = "<span>&#9728;&#65039;</span> Try Again";
+      log("ERROR", msg);
+    }
+
+    function renderBriefing(briefing) {
+      loading.classList.remove("active");
+
+      var w = briefing.weather || {};
+      showModule(
+        "<div class=\"module weather\">" +
+        "<div class=\"module-header\"><span class=\"module-icon\">&#127748;</span><span class=\"module-title\">Delafield Weather</span></div>" +
+        "<div class=\"module-body\"><div class=\"weather-row\"><div class=\"weather-temp\">" + (w.temp || "--") + "</div>" +
+        "<div><div class=\"weather-desc\">" + (w.condition || "") + "</div><div class=\"weather-detail\">" + (w.detail || "") + "</div></div></div>" +
+        "<div class=\"weather-summary\">" + (w.summary || "") + "</div></div></div>", 100
+      );
+
+      var newsHTML = "<div class=\"module news\"><div class=\"module-header\"><span class=\"module-icon\">&#128240;</span><span class=\"module-title\">Morning Headlines</span></div><div class=\"module-body\">";
+      (briefing.news || []).forEach(function(section) {
+        newsHTML += "<div class=\"news-section\"><div class=\"news-category\">" + section.category + "</div>";
+        (section.items || []).forEach(function(item) {
+          newsHTML += "<div class=\"news-item\"><div class=\"news-item-headline\">" + item.headline + "</div><div class=\"news-item-summary\">" + item.summary + "</div></div>";
+        });
+        newsHTML += "</div>";
+      });
+      newsHTML += "</div></div>";
+      showModule(newsHTML, 300);
+
+      var fg = briefing.feelgood || {};
+      showModule(
+        "<div class=\"module feelgood\"><div class=\"module-header\"><span class=\"module-icon\">&#127807;</span><span class=\"module-title\">Something Good</span></div>" +
+        "<div class=\"module-body\"><div>" + (fg.story || "") + "</div><div class=\"feelgood-source\">— " + (fg.source || "") + "</div></div></div>", 500
+      );
+
+      var jokesHTML = "<div class=\"module jokes\"><div class=\"module-header\"><span class=\"module-icon\">&#128516;</span><span class=\"module-title\">Dad Jokes</span></div><div class=\"module-body\">";
+      (briefing.jokes || []).forEach(function(joke) {
+        jokesHTML += "<div class=\"joke\"><div class=\"joke-q\">" + joke.q + "</div><div class=\"joke-a\">" + joke.a + "</div></div>";
+      });
+      jokesHTML += "</div></div>";
+      showModule(jokesHTML, 700);
+
+      var genTime = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+      document.getElementById("genTime").textContent = genTime;
+      document.getElementById("footer").style.display = "block";
+
+      btn.disabled = false;
+      btn.innerHTML = "<span>&#8635;</span> Refresh Briefing";
+    }
+
+    callAPI(1);
+  };
+})();
+</script>
+</body>
+</html>
