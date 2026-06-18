@@ -192,7 +192,7 @@
         showError("Too many turns without a final response");
         return;
       }
-      fetch("https://api.anthropic.com/v1/messages", {
+      fetch("https://morning-briefing-proxy.ryan-nanna.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
